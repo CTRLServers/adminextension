@@ -1,6 +1,6 @@
 {
     "name": "ctrlservers/adminextension",
-    "description": "Adds authenticated panel title and version endpoints to Pterodactyl.",
+    "description": "Adds authenticated panel information and settings endpoints to Pterodactyl.",
     "type": "library",
     "license": "MIT",
     "homepage": "https://github.com/CTRLServers/adminextension",

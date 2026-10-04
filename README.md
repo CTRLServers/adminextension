@@ -1,11 +1,14 @@
 # CTRLServers Pterodactyl Admin Extension
 
-Adds two authenticated metadata endpoints to a Pterodactyl panel:
+Adds authenticated metadata and settings endpoints to a Pterodactyl panel:
 
 - `GET /admin/gettitle`
 - `GET /admin/getpanelversion`
+- `GET|PATCH /admin/ctrlservers/settings/general`
+- `GET|PATCH /admin/ctrlservers/settings/mail`
+- `GET|PATCH /admin/ctrlservers/settings/advanced`
 
-Both endpoints use Pterodactyl's Application API authentication and rate limiting. Requests must provide a valid Application API key or a root-administrator Client API key.
+All endpoints use Pterodactyl's Application API authentication and rate limiting. Requests must provide a valid Application API key or a root-administrator Client API key.
 
 ## Install
 
@@ -46,6 +49,20 @@ curl https://panel.example.com/admin/getpanelversion \
 ```
 
 The version remains a string because Pterodactyl versions contain multiple numeric components and development builds may return `canary`.
+
+## Settings
+
+Each settings `GET` response contains `fields` with the panel's current values and `options` for frontend dropdowns. Submit changed values to the same URL with `PATCH` and a JSON body.
+
+The `PATCH` response has the same shape as `GET`, populated with the saved values, so a frontend can replace its local form state directly after a successful update.
+
+The general endpoint manages the company name, two-factor requirement, and default language. Its language options are generated from the language directories installed on that panel.
+
+The mail endpoint manages SMTP host, username, port, TLS or SSL encryption, password, sender address, and sender name. Existing SMTP passwords are never returned. The response provides `smtp_password_configured`; omit `smtp_password` or send an empty string to keep the current password.
+
+The advanced endpoint manages reCAPTCHA, HTTP timeouts, and automatic allocation creation. Starting and ending ports are required when automatic allocation creation is enabled.
+
+All updates use Pterodactyl's settings repository and restart its queue worker after saving.
 
 ## Update
 
