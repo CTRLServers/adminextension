@@ -1,0 +1,38 @@
+{
+    "name": "ctrlservers/adminextension",
+    "description": "Adds authenticated panel title and version endpoints to Pterodactyl.",
+    "type": "library",
+    "license": "MIT",
+    "homepage": "https://github.com/CTRLServers/adminextension",
+    "keywords": [
+        "pterodactyl",
+        "ctrlservers",
+        "laravel",
+        "application-api"
+    ],
+    "authors": [
+        {
+            "name": "CTRLServers",
+            "homepage": "https://github.com/CTRLServers"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "laravel/framework": "^10.0 || ^11.0 || ^12.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "CTRLServers\\AdminExtension\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "CTRLServers\\AdminExtension\\AdminExtensionServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
