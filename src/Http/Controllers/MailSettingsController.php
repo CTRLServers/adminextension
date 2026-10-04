@@ -27,13 +27,13 @@ class MailSettingsController extends Controller
             'mail_driver' => (string) $this->config->get('mail.default', ''),
             'fields' => [
                 'smtp_host' => (string) $this->config->get('mail.mailers.smtp.host', ''),
-                'smtp_username' => $this->config->get('mail.mailers.smtp.username'),
+                'smtp_username' => (string) $this->config->get('mail.mailers.smtp.username', ''),
                 'smtp_port' => (int) $this->config->get('mail.mailers.smtp.port', 25),
                 'encryption' => $this->config->get('mail.mailers.smtp.encryption'),
                 'smtp_password' => null,
                 'smtp_password_configured' => $password !== null && $password !== '',
                 'mail_from' => (string) $this->config->get('mail.from.address', ''),
-                'mail_from_name' => $this->config->get('mail.from.name'),
+                'mail_from_name' => (string) $this->config->get('mail.from.name', ''),
             ],
             'options' => [
                 'encryption' => [
