@@ -44,11 +44,14 @@ curl https://panel.example.com/admin/getpanelversion \
 
 ```json
 {
-  "version": "1.15.1"
+  "version": "1.15.1",
+  "latest_version": "1.15.1",
+  "up_to_date": true,
+  "update_check_available": true
 }
 ```
 
-The version remains a string because Pterodactyl versions contain multiple numeric components and development builds may return `canary`.
+The installed version remains a string because Pterodactyl versions contain multiple numeric components and development builds may return `canary`. The latest stable version is retrieved from the official Pterodactyl GitHub releases API and cached for one hour. If the check is unavailable, `latest_version` and `up_to_date` are `null`, and `update_check_available` is `false`.
 
 ## Settings
 
