@@ -20,7 +20,8 @@ class PanelInformationController extends Controller
     public function version(): JsonResponse
     {
         $version = (string) config('app.version', 'unknown');
-        $latestversion = $this->latestversion();
+        $latestrelease = $this->latestrelease();
+        $latestversion = $latestrelease['version'] ?? null;
         $normalizedversion = ltrim($version, 'vV');
         $uptodate = null;
 
@@ -34,14 +35,104 @@ class PanelInformationController extends Controller
                 'latest_version' => $latestversion,
                 'up_to_date' => $uptodate,
                 'update_check_available' => $latestversion !== null,
+                'release_url' => $latestrelease['url'] ?? null,
             ])
             ->header('Cache-Control', 'no-store');
     }
 
-    private function latestversion(): ?string
+    public function system(): JsonResponse
+    {
+        $cpu = $this->cpudetails();
+        $memory = $this->memorydetails();
+        $disk = $this->diskdetails();
+
+        return response()
+            ->json([
+                'cpu' => $cpu,
+                'memory' => $memory,
+                'disk' => $disk,
+            ])
+            ->header('Cache-Control', 'no-store');
+    }
+
+    private function cpudetails(): array
+    {
+        $information = @file_get_contents('/proc/cpuinfo') ?: '';
+        preg_match('/^model name\s*:\s*(.+)$/mi', $information, $model);
+        preg_match_all('/^processor\s*:/mi', $information, $processors);
+        $cores = max(1, count($processors[0] ?? []));
+        $first = $this->cputimes();
+        usleep(100000);
+        $second = $this->cputimes();
+        $used = null;
+
+        if ($first !== null && $second !== null) {
+            $total = $second['total'] - $first['total'];
+            $idle = $second['idle'] - $first['idle'];
+            if ($total > 0) {
+                $used = round(max(0, min(100, (($total - $idle) / $total) * 100)), 1);
+            }
+        }
+
+        if ($used === null) {
+            $load = sys_getloadavg();
+            $used = round(max(0, min(100, ((float) ($load[0] ?? 0) / $cores) * 100)), 1);
+        }
+
+        return [
+            'name' => trim($model[1] ?? php_uname('m')),
+            'cores' => $cores,
+            'used_percent' => $used,
+        ];
+    }
+
+    private function cputimes(): ?array
+    {
+        $statistics = @file_get_contents('/proc/stat');
+        if ($statistics === false || !preg_match('/^cpu\s+(.+)$/m', $statistics, $match)) {
+            return null;
+        }
+
+        $values = array_map('intval', preg_split('/\s+/', trim($match[1])) ?: []);
+        if (count($values) < 4) {
+            return null;
+        }
+
+        return [
+            'total' => array_sum($values),
+            'idle' => ($values[3] ?? 0) + ($values[4] ?? 0),
+        ];
+    }
+
+    private function memorydetails(): array
+    {
+        $information = @file_get_contents('/proc/meminfo') ?: '';
+        preg_match('/^MemTotal:\s+(\d+)\s+kB$/mi', $information, $totalmatch);
+        preg_match('/^MemAvailable:\s+(\d+)\s+kB$/mi', $information, $availablematch);
+        $total = (int) ($totalmatch[1] ?? 0) * 1024;
+        $available = (int) ($availablematch[1] ?? 0) * 1024;
+
+        return [
+            'used' => max(0, $total - $available),
+            'total' => $total,
+        ];
+    }
+
+    private function diskdetails(): array
+    {
+        $total = (int) (@disk_total_space(base_path()) ?: 0);
+        $free = (int) (@disk_free_space(base_path()) ?: 0);
+
+        return [
+            'used' => max(0, $total - $free),
+            'total' => $total,
+        ];
+    }
+
+    private function latestrelease(): ?array
     {
         try {
-            return Cache::remember('ctrlservers.adminextension.latest_panel_version', now()->addHour(), function (): ?string {
+            return Cache::remember('ctrlservers.adminextension.latest_panel_release', now()->addHour(), function (): ?array {
                 $response = Http::acceptJson()
                     ->withHeaders(['User-Agent' => 'CTRLServers Admin Extension'])
                     ->connectTimeout(3)
@@ -54,7 +145,14 @@ class PanelInformationController extends Controller
 
                 $latestversion = ltrim((string) $response->json('tag_name'), 'vV');
 
-                return $latestversion !== '' ? $latestversion : null;
+                if ($latestversion === '') {
+                    return null;
+                }
+
+                return [
+                    'version' => $latestversion,
+                    'url' => (string) $response->json('html_url'),
+                ];
             });
         } catch (Throwable) {
             return null;
